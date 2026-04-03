@@ -117,40 +117,37 @@ console.log(result.texts.join('\n'));
 
 ## API Reference
 
-### `extractFromFile(file: File): Promise<ExtractionResult>`
+### Extraction
 
-ブラウザの `File` オブジェクトからテキストを抽出します。
+| Function | Description |
+|----------|-------------|
+| `extractFromFile(file: File)` | ブラウザの `File` オブジェクトからテキストを抽出 |
+| `extract(data: Uint8Array, extension: SupportedFormat, filename?: string)` | バイナリデータから抽出。戻り値は `Promise<ExtractionResult>` |
+| `isSupported(fileName: string)` | 対応フォーマットか判定。戻り値は `boolean` |
 
-### `extract(data: Uint8Array, extension: SupportedFormat, filename?: string): Promise<ExtractionResult>`
+### Initialization
 
-バイナリデータとファイル拡張子を指定してテキストを抽出します。
+通常は自動初期化されるため呼ぶ必要はありません。
 
-### `isSupported(fileName: string): boolean`
+| Function | Description |
+|----------|-------------|
+| `init(wasmUrl?: string \| URL)` | WASM を手動で非同期初期化（プリロード用） |
+| `initWithBytes(wasmBytes: BufferSource)` | WASM バイナリを同期初期化（Node.js 向け） |
 
-ファイル名から対応フォーマットかどうかを判定します。
+### Worker
 
-### `init(wasmUrl?: string | URL): Promise<void>`
+| API | Description |
+|-----|-------------|
+| `new DocumeltWorker(worker: Worker)` | Worker クライアントを作成 |
+| `client.extract(data, extension, filename?)` | Worker 経由で抽出 |
+| `client.extractFromFile(file)` | Worker 経由で File から抽出 |
+| `client.terminate()` | Worker を終了 |
 
-WASM モジュールを手動で初期化します。通常は自動初期化されるため呼ぶ必要はありません。初期化タイミングを制御したい場合（プリロード等）に使用します。
+### Constants
 
-### `initWithBytes(wasmBytes: BufferSource): void`
-
-WASM バイナリを直接渡して同期的に初期化します。Node.js 環境向け。
-
-### `DocumeltWorker`
-
-Web Worker 経由で抽出を行うクライアントクラス。
-
-```typescript
-const client = new DocumeltWorker(worker);
-await client.extract(data, 'pdf', 'report.pdf');
-await client.extractFromFile(file);
-client.terminate();
-```
-
-### `SUPPORTED_FORMATS`
-
-対応フォーマットの配列: `['pdf', 'docx', 'xlsx', 'pptx', 'txt']`
+| Name | Value |
+|------|-------|
+| `SUPPORTED_FORMATS` | `['pdf', 'docx', 'xlsx', 'pptx', 'txt']` |
 
 ## Types
 
