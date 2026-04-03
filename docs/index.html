@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>documelt - Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 1.1rem;
+    }
+
+    .badges {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+    }
+
+    /* Drop Zone */
+    .dropzone {
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      padding: 60px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 32px;
+      background: #1e293b;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: #60a5fa;
+      background: #1e293b;
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.1);
+    }
+
+    .dropzone-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .dropzone-text {
+      font-size: 1.1rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .dropzone-formats {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    input[type="file"] { display: none; }
+
+    /* Status */
+    .status {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .status.loading {
+      display: flex;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #94a3b8;
+    }
+
+    .status.error {
+      display: flex;
+      background: #1c1317;
+      border: 1px solid #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #334155;
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Meta */
+    .meta {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .meta.visible { display: grid; }
+
+    .meta-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .meta-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #60a5fa;
+    }
+
+    .meta-label {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: none;
+      gap: 4px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tabs.visible { display: flex; }
+
+    .tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .tab:hover { border-color: #475569; }
+
+    .tab.active {
+      background: #60a5fa;
+      border-color: #60a5fa;
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    /* Result */
+    .result {
+      display: none;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .result.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .result-title {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    .copy-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      border-color: #60a5fa;
+      color: #60a5fa;
+    }
+
+    .result-body {
+      padding: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      color: #475569;
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: #60a5fa;
+      text-decoration: none;
+    }
+
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>documelt</h1>
+      <p>Rust + WebAssembly によるブラウザ内ドキュメントテキスト抽出</p>
+      <div class="badges">
+        <span class="badge">PDF</span>
+        <span class="badge">DOCX</span>
+        <span class="badge">XLSX</span>
+        <span class="badge">PPTX</span>
+        <span class="badge">TXT</span>
+      </div>
+    </header>
+
+    <div class="dropzone" id="dropzone">
+      <div class="dropzone-icon">&#128196;</div>
+      <div class="dropzone-text">ファイルをドロップ、またはクリックして選択</div>
+      <div class="dropzone-formats">PDF / DOCX / XLSX / PPTX / TXT (10MB以下)</div>
+    </div>
+
+    <input type="file" id="fileInput" accept=".pdf,.docx,.xlsx,.pptx,.txt">
+
+    <div class="status" id="status">
+      <div class="spinner"></div>
+      <span id="statusText"></span>
+    </div>
+
+    <div class="meta" id="meta">
+      <div class="meta-card">
+        <div class="meta-value" id="metaPages">-</div>
+        <div class="meta-label">Pages</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-value" id="metaChars">-</div>
+        <div class="meta-label">Characters</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-value" id="metaSize">-</div>
+        <div class="meta-label">File Size</div>
+      </div>
+      <div class="meta-card">
+        <div class="meta-value" id="metaTime">-</div>
+        <div class="meta-label">Time</div>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="result" id="result">
+      <div class="result-header">
+        <span class="result-title" id="resultTitle">Extracted Text</span>
+        <button class="copy-btn" id="copyBtn">Copy</button>
+      </div>
+      <div class="result-body" id="resultBody"></div>
+    </div>
+
+    <footer>
+      <p>
+        <a href="https://github.com/NAOHIDEOTA/documelt">GitHub</a>
+        &nbsp;/&nbsp;
+        <a href="https://www.npmjs.com/package/documelt">npm</a>
+        &nbsp;/&nbsp;
+        Powered by Rust + WebAssembly
+      </p>
+    </footer>
+  </div>
+
+  <script type="module">
+    import init, { extract } from '../pkg/documelt.js';
+
+    let wasmReady = false;
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const status = document.getElementById('status');
+    const statusText = document.getElementById('statusText');
+    const meta = document.getElementById('meta');
+    const tabs = document.getElementById('tabs');
+    const result = document.getElementById('result');
+    const resultBody = document.getElementById('resultBody');
+    const resultTitle = document.getElementById('resultTitle');
+    const copyBtn = document.getElementById('copyBtn');
+
+    // Init WASM
+    async function ensureInit() {
+      if (!wasmReady) {
+        await init();
+        wasmReady = true;
+      }
+    }
+
+    // Drop zone events
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        handleFile(fileInput.files[0]);
+      }
+    });
+
+    // Copy
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(resultBody.textContent);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+    });
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+    }
+
+    function showStatus(text, type) {
+      status.className = 'status ' + type;
+      statusText.textContent = text;
+    }
+
+    function hideStatus() {
+      status.className = 'status';
+    }
+
+    async function handleFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const supported = ['pdf', 'docx', 'xlsx', 'pptx', 'txt'];
+
+      if (!supported.includes(ext)) {
+        showStatus('非対応のファイル形式です: .' + ext, 'error');
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        showStatus('ファイルサイズが10MBを超えています', 'error');
+        return;
+      }
+
+      showStatus(file.name + ' を解析中...', 'loading');
+      meta.classList.remove('visible');
+      tabs.classList.remove('visible');
+      result.classList.remove('visible');
+
+      try {
+        await ensureInit();
+
+        const buffer = await file.arrayBuffer();
+        const data = new Uint8Array(buffer);
+
+        const start = performance.now();
+        const res = extract(data, ext);
+        const time = (performance.now() - start) / 1000;
+
+        hideStatus();
+
+        if (!res.success) {
+          showStatus(res.error || '抽出に失敗しました', 'error');
+          return;
+        }
+
+        const joined = res.texts.join('\n');
+
+        // Meta
+        document.getElementById('metaPages').textContent = res.pages;
+        document.getElementById('metaChars').textContent = joined.length.toLocaleString();
+        document.getElementById('metaSize').textContent = formatSize(file.size);
+        document.getElementById('metaTime').textContent = time.toFixed(3) + 's';
+        meta.classList.add('visible');
+
+        // Tabs (if multiple pages)
+        tabs.innerHTML = '';
+        if (res.texts.length > 1) {
+          const allTab = document.createElement('div');
+          allTab.className = 'tab active';
+          allTab.textContent = 'All';
+          allTab.addEventListener('click', () => {
+            setActiveTab(allTab);
+            resultBody.textContent = joined;
+            resultTitle.textContent = file.name + ' - All Pages';
+          });
+          tabs.appendChild(allTab);
+
+          res.texts.forEach((text, i) => {
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.textContent = (ext === 'xlsx' ? 'Sheet ' : 'Page ') + (i + 1);
+            tab.addEventListener('click', () => {
+              setActiveTab(tab);
+              resultBody.textContent = text;
+              resultTitle.textContent = file.name + ' - ' + tab.textContent;
+            });
+            tabs.appendChild(tab);
+          });
+          tabs.classList.add('visible');
+        }
+
+        // Result
+        resultBody.textContent = joined;
+        resultTitle.textContent = file.name;
+        result.classList.add('visible');
+
+      } catch (err) {
+        showStatus('エラー: ' + err.message, 'error');
+      }
+    }
+
+    function setActiveTab(activeTab) {
+      tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      activeTab.classList.add('active');
+    }
+  </script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 {
   "name": "documelt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "WASM-powered document text extraction for PDF, DOCX, XLSX, PPTX",
   "type": "module",
   "main": "dist/index.js",

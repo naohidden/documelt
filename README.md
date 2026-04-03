@@ -8,6 +8,8 @@
 
 サーバーに依存せず、**ブラウザ上で** PDF・Word・Excel・PowerPoint からテキストを高速に抽出します。
 
+**[Live Demo](https://naohideota.github.io/documelt/)**
+
 ## Features
 
 - **ブラウザ完結** — サーバーサイド不要。WASMがブラウザ内でテキスト抽出を実行

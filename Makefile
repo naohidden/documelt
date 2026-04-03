@@ -1,4 +1,4 @@
-.PHONY: up build test publish
+.PHONY: up build test publish demo
 
 up:
 	docker compose up -d --build
@@ -18,6 +18,10 @@ publish-patch:
 	npm version patch --no-git-tag-version
 	docker exec documelt npm run build
 	npm publish --ignore-scripts
+
+demo:
+	docker exec -d documelt npx http-server /workspace -p 8080 --cors
+	@echo "http://localhost:8080/docs/"
 
 publish-minor:
 	npm version minor --no-git-tag-version
