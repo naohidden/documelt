@@ -1,0 +1,5 @@
+/crates/target
+/node_modules
+/dist
+/samples/extracted_*.txt
+.history

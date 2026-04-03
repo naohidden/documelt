@@ -1,0 +1,55 @@
+{
+  "name": "documelt",
+  "version": "0.1.0",
+  "description": "WASM-powered document text extraction for PDF, DOCX, XLSX, PPTX",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./worker": {
+      "import": "./dist/worker/handler.js",
+      "types": "./dist/worker/handler.d.ts"
+    }
+  },
+  "files": [
+    "dist/",
+    "pkg/documelt_bg.wasm",
+    "pkg/documelt.js",
+    "pkg/documelt.d.ts",
+    "pkg/documelt_bg.wasm.d.ts"
+  ],
+  "scripts": {
+    "build:wasm": "wasm-pack build crates --target web --out-dir ../pkg && rm -f pkg/package.json pkg/.gitignore",
+    "build:ts": "tsc",
+    "build": "npm run build:wasm && npm run build:ts",
+    "prepublishOnly": "npm run build",
+    "test": "node tests/extract.mjs",
+    "test:rust": "cd crates && cargo test",
+    "test:output": "node tests/extract_output.mjs"
+  },
+  "keywords": [
+    "wasm",
+    "pdf",
+    "docx",
+    "xlsx",
+    "pptx",
+    "text-extraction"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NAOHIDEOTA/documelt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NAOHIDEOTA/documelt/issues"
+  },
+  "homepage": "https://github.com/NAOHIDEOTA/documelt#readme",
+  "author": "NAOHIDEOTA",
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}

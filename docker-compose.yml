@@ -1,0 +1,9 @@
+services:
+  documelt:
+    container_name: documelt
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    command: ["tail", "-f", "/dev/null"]
