@@ -1,4 +1,4 @@
-.PHONY: up build test publish demo
+.PHONY: up build test publish demo make-gif
 
 up:
 	docker compose up -d --build
@@ -27,3 +27,6 @@ publish-minor:
 	npm version minor --no-git-tag-version
 	docker exec documelt npm run build
 	npm publish --ignore-scripts
+
+make-gif:
+	ffmpeg -i sample.mp4 -vf "fps=10,scale=800:-1" docs/assets/demo.gif

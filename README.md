@@ -10,6 +10,8 @@
 
 **[Live Demo](https://naohideota.github.io/documelt/docs)**
 
+![Demo](docs/assets/demo.gif)
+
 ## Features
 
 - **ブラウザ完結** — サーバーサイド不要。WASMがブラウザ内でテキスト抽出を実行
