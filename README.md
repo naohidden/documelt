@@ -8,7 +8,7 @@
 
 サーバーに依存せず、**ブラウザ上で** PDF・Word・Excel・PowerPoint からテキストを高速に抽出します。
 
-**[Live Demo](https://naohideota.github.io/documelt/)**
+**[Live Demo](https://naohideota.github.io/documelt/docs)**
 
 ## Features
 
