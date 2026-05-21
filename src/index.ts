@@ -1,5 +1,5 @@
 // Types
-export type { ExtractionResult, SupportedFormat } from './types.js';
+export type { ExtractionResult, ExtractOptions, SupportedFormat } from './types.js';
 export { SUPPORTED_FORMATS } from './types.js';
 
 // WASM初期化

@@ -1,10 +1,11 @@
 import initWasm, { extract as wasmExtract } from '../../pkg/documelt.js';
-import type { WorkerRequest, WorkerResponse, WasmExtractionResult } from '../types.js';
+import type { WorkerRequest, WorkerResponse, WasmExtractionResult, ExtractionResult } from '../types.js';
+import { toMarkdown } from '../core/markdown.js';
 
 let initialized = false;
 
 self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
-  const { id, data, filename, extension } = e.data;
+  const { id, data, filename, extension, options } = e.data;
 
   try {
     if (!initialized) {
@@ -17,22 +18,23 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
     const time = Math.round(performance.now() - start) / 1000;
 
     const joined = wasm.texts.join('\n');
-    const response: WorkerResponse = {
-      id,
-      result: {
-        texts: wasm.texts,
-        success: wasm.success,
-        error: wasm.error,
-        meta: {
-          filename,
-          extension,
-          size: data.byteLength,
-          pages: wasm.pages,
-          characters: joined.length,
-          time,
-        },
+    const result: ExtractionResult = {
+      texts: wasm.texts,
+      success: wasm.success,
+      error: wasm.error,
+      meta: {
+        filename,
+        extension,
+        size: data.byteLength,
+        pages: wasm.pages,
+        characters: joined.length,
+        time,
       },
     };
+    if (options?.format === 'markdown' && wasm.success) {
+      result.markdown = toMarkdown(wasm.texts, extension, filename);
+    }
+    const response: WorkerResponse = { id, result };
     self.postMessage(response);
   } catch (err) {
     const response: WorkerResponse = {

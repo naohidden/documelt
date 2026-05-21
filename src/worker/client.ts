@@ -1,4 +1,4 @@
-import type { ExtractionResult, SupportedFormat, WorkerRequest, WorkerResponse } from '../types.js';
+import type { ExtractionResult, ExtractOptions, SupportedFormat, WorkerRequest, WorkerResponse } from '../types.js';
 import { SUPPORTED_FORMATS } from '../types.js';
 
 /**
@@ -34,11 +34,16 @@ export class DocumeltWorker {
   /**
    * バイナリデータからテキストを抽出
    */
-  extract(data: Uint8Array, extension: SupportedFormat, filename: string = ''): Promise<ExtractionResult> {
+  extract(
+    data: Uint8Array,
+    extension: SupportedFormat,
+    filename: string = '',
+    options: ExtractOptions = {},
+  ): Promise<ExtractionResult> {
     return new Promise((resolve, reject) => {
       const id = this.nextId++;
       this.pending.set(id, { resolve, reject });
-      const request: WorkerRequest = { id, data, filename, extension };
+      const request: WorkerRequest = { id, data, filename, extension, options };
       this.worker.postMessage(request, [data.buffer]);
     });
   }
@@ -46,7 +51,7 @@ export class DocumeltWorker {
   /**
    * Fileオブジェクトからテキストを抽出
    */
-  async extractFromFile(file: File): Promise<ExtractionResult> {
+  async extractFromFile(file: File, options: ExtractOptions = {}): Promise<ExtractionResult> {
     const extension = file.name.split('.').pop()?.toLowerCase() as SupportedFormat;
     if (!SUPPORTED_FORMATS.includes(extension)) {
       return {
@@ -64,7 +69,7 @@ export class DocumeltWorker {
       };
     }
     const buffer = await file.arrayBuffer();
-    return this.extract(new Uint8Array(buffer), extension, file.name);
+    return this.extract(new Uint8Array(buffer), extension, file.name, options);
   }
 
   /**

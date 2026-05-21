@@ -67,6 +67,34 @@ input.addEventListener('change', async () => {
 
 WASM の初期化は初回呼び出し時に自動で行われます。`init()` を明示的に呼ぶ必要はありません。
 
+### Markdown 出力
+
+`format: 'markdown'` を指定すると、結果に `markdown` プロパティ（整形済みの文字列）が追加されます。
+
+```typescript
+const result = await extractFromFile(file, { format: 'markdown' });
+
+console.log(result.markdown);
+// # report.pdf
+//
+// ## Page 1
+//
+// ...本文...
+//
+// ## Page 2
+//
+// ...
+```
+
+整形ルール：
+
+- **PDF** — ページごとに `## Page N` 見出しを付与
+- **PPTX** — スライドごとに `## Slide N` 見出しを付与
+- **XLSX** — シートごとに `## SheetName` + Markdown table に変換
+- **DOCX / TXT** — テキストをそのまま結合
+
+`format` を省略するか `'text'` を指定すれば、既存の `texts` のみが返ります（`markdown` は付きません）。
+
 ## Usage
 
 ### Browser (Main Thread)
@@ -125,9 +153,15 @@ console.log(result.texts.join('\n'));
 
 | Function | Description |
 |----------|-------------|
-| `extractFromFile(file: File)` | ブラウザの `File` オブジェクトからテキストを抽出 |
-| `extract(data: Uint8Array, extension: SupportedFormat, filename?: string)` | バイナリデータから抽出。戻り値は `Promise<ExtractionResult>` |
+| `extractFromFile(file: File, options?: ExtractOptions)` | ブラウザの `File` オブジェクトからテキストを抽出 |
+| `extract(data: Uint8Array, extension: SupportedFormat, filename?: string, options?: ExtractOptions)` | バイナリデータから抽出。戻り値は `Promise<ExtractionResult>` |
 | `isSupported(fileName: string)` | 対応フォーマットか判定。戻り値は `boolean` |
+
+`ExtractOptions`：
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `format` | `'text' \| 'markdown'` | `'markdown'` を指定すると `result.markdown` に整形済み Markdown を返却（デフォルト `'text'`） |
 
 ### Initialization
 
@@ -161,6 +195,11 @@ interface ExtractionResult {
   success: boolean;          // 抽出成功フラグ
   error: string | null;      // エラーメッセージ（成功時 null）
   meta: ExtractionMeta;      // メタデータ
+  markdown?: string;         // options.format === 'markdown' のときのみ
+}
+
+interface ExtractOptions {
+  format?: 'text' | 'markdown';
 }
 
 interface ExtractionMeta {

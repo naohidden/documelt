@@ -1,6 +1,7 @@
-import type { ExtractionResult, SupportedFormat } from '../types.js';
+import type { ExtractionResult, ExtractOptions, SupportedFormat } from '../types.js';
 import { SUPPORTED_FORMATS } from '../types.js';
 import { callExtract } from './wasm.js';
+import { toMarkdown } from './markdown.js';
 
 function getExtension(fileName: string): string {
   return fileName.split('.').pop()?.toLowerCase() ?? '';
@@ -17,13 +18,18 @@ export function isSupported(fileName: string): boolean {
 /**
  * バイナリデータからテキストを抽出
  */
-export async function extract(data: Uint8Array, extension: SupportedFormat, filename: string = ''): Promise<ExtractionResult> {
+export async function extract(
+  data: Uint8Array,
+  extension: SupportedFormat,
+  filename: string = '',
+  options: ExtractOptions = {},
+): Promise<ExtractionResult> {
   const start = performance.now();
   const wasm = await callExtract(data, extension);
   const time = Math.round(performance.now() - start) / 1000;
 
   const joined = wasm.texts.join('\n');
-  return {
+  const result: ExtractionResult = {
     texts: wasm.texts,
     success: wasm.success,
     error: wasm.error,
@@ -36,12 +42,16 @@ export async function extract(data: Uint8Array, extension: SupportedFormat, file
       time,
     },
   };
+  if (options.format === 'markdown' && wasm.success) {
+    result.markdown = toMarkdown(wasm.texts, extension, filename);
+  }
+  return result;
 }
 
 /**
  * Fileオブジェクトからテキストを抽出（ブラウザ用）
  */
-export async function extractFromFile(file: File): Promise<ExtractionResult> {
+export async function extractFromFile(file: File, options: ExtractOptions = {}): Promise<ExtractionResult> {
   const extension = getExtension(file.name) as SupportedFormat;
   if (!isSupported(file.name)) {
     return {
@@ -59,5 +69,5 @@ export async function extractFromFile(file: File): Promise<ExtractionResult> {
     };
   }
   const buffer = await file.arrayBuffer();
-  return extract(new Uint8Array(buffer), extension, file.name);
+  return extract(new Uint8Array(buffer), extension, file.name, options);
 }

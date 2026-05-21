@@ -12,6 +12,14 @@ export interface ExtractionResult {
   success: boolean;
   error: string | null;
   meta: ExtractionMeta;
+  /** `options.format === 'markdown'` を指定したときのみ含まれる結合済み Markdown */
+  markdown?: string;
+}
+
+/** 抽出時のオプション */
+export interface ExtractOptions {
+  /** 出力フォーマット。`'markdown'` を指定すると result.markdown に整形済み文字列を返す */
+  format?: 'text' | 'markdown';
 }
 
 export interface ExtractionMeta {
@@ -33,6 +41,7 @@ export interface WorkerRequest {
   data: Uint8Array;
   filename: string;
   extension: SupportedFormat;
+  options?: ExtractOptions;
 }
 
 export interface WorkerResponse {
