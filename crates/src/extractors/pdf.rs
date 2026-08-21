@@ -1,5 +1,8 @@
 use crate::ExtractionResult;
 
+/// PDF はテキストのみ抽出する。
+/// pdf-extract の by-pages API は文字列しか返さないため、
+/// 表・太字・リンクなどの構造情報は復元できない (README の Limitations 参照)。
 pub fn extract(data: &[u8]) -> ExtractionResult {
     match pdf_extract::extract_text_from_mem_by_pages(data) {
         Ok(page_texts) => {
@@ -8,30 +11,18 @@ pub fn extract(data: &[u8]) -> ExtractionResult {
                 .map(|t| t.trim().to_string())
                 .collect();
             let total_len: usize = texts.iter().map(|t| t.len()).sum();
-            let pages = texts.len() as u32;
 
             if total_len < 10 {
-                ExtractionResult {
-                    texts: vec![],
-                    success: false,
-                    error: Some("PDF text too short (likely scanned/image PDF)".to_string()),
-                    pages,
-                }
+                let mut result = ExtractionResult::failure(
+                    "PDF text too short (likely scanned/image PDF)".to_string(),
+                );
+                result.pages = texts.len() as u32;
+                result
             } else {
-                ExtractionResult {
-                    texts,
-                    success: true,
-                    error: None,
-                    pages,
-                }
+                ExtractionResult::from_texts(texts)
             }
         }
-        Err(e) => ExtractionResult {
-            texts: vec![],
-            success: false,
-            error: Some(format!("PDF extraction failed: {}", e)),
-            pages: 0,
-        },
+        Err(e) => ExtractionResult::failure(format!("PDF extraction failed: {}", e)),
     }
 }
 

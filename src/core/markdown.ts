@@ -1,66 +1,103 @@
-import type { SupportedFormat } from '../types.js';
+import type { Block, ListItemBlock, Run } from '../types.js';
 
 /**
- * 抽出済みテキスト配列を Markdown 文字列に整形する。
+ * 構造化ブロック列を Markdown 文字列に整形する。
  *
- * - PDF      : `## Page N` 見出し付き
- * - PPTX     : `## Slide N` 見出し付き
- * - XLSX     : 各シートを `## SheetName` + Markdown table に変換
- *              (calamine のタブ区切り行を読み取り、1行目をヘッダ扱い)
- * - DOCX/TXT : テキストをそのまま結合
+ * ページ(スライド/シート)の概念は本文に持ち込まない。
+ * ページ区切りは `ExtractionResult.texts` の配列要素として表現される。
  */
-export function toMarkdown(texts: string[], extension: SupportedFormat, filename: string): string {
-  if (texts.length === 0) return filename ? `# ${filename}\n` : '';
+export function renderMarkdown(blocks: Block[]): string {
+  return blocks
+    .map(renderBlock)
+    .filter((s) => s.length > 0)
+    .join('\n\n');
+}
 
-  const title = filename ? `# ${filename}\n\n` : '';
-
-  switch (extension) {
-    case 'pdf':
-      return title + texts.map((t, i) => `## Page ${i + 1}\n\n${t.trim()}`).join('\n\n');
-    case 'pptx':
-      return title + texts.map((t, i) => `## Slide ${i + 1}\n\n${t.trim()}`).join('\n\n');
-    case 'xlsx':
-      return title + texts.map(sheetToMarkdown).join('\n\n');
-    case 'docx':
-    case 'txt':
-    default:
-      return title + texts.join('\n\n').trim();
+function renderBlock(block: Block): string {
+  switch (block.type) {
+    case 'heading': {
+      const level = Math.min(Math.max(block.level, 1), 6);
+      return '#'.repeat(level) + ' ' + renderRuns(block.runs);
+    }
+    case 'para':
+      return renderRuns(block.runs);
+    case 'list':
+      return renderList(block.ordered, block.items);
+    case 'table':
+      return renderTable(block.rows);
+    case 'code':
+      return '```\n' + block.text + '\n```';
   }
 }
 
-/**
- * XLSX のシート出力 (`## SheetName\n` + タブ区切り行) を
- * `## SheetName` + Markdown table に変換する。
- */
-function sheetToMarkdown(sheetText: string): string {
-  const lines = sheetText.split('\n');
-  const heading = lines[0]?.startsWith('## ') ? lines[0] : `## ${lines[0] ?? ''}`;
-  const bodyLines = (lines[0]?.startsWith('## ') ? lines.slice(1) : lines)
-    .filter((l) => l.length > 0);
-
-  if (bodyLines.length === 0) return heading;
-
-  const rows = bodyLines.map((l) => l.split('\t').map(escapeCell));
-  const cols = Math.max(...rows.map((r) => r.length));
-  const padded = rows.map((r) => {
-    const out = r.slice();
-    while (out.length < cols) out.push('');
-    return out;
-  });
-
-  const header = padded[0];
-  const sep = new Array(cols).fill('---');
-  const dataRows = padded.slice(1);
-
-  const table = [
-    `| ${header.join(' | ')} |`,
-    `| ${sep.join(' | ')} |`,
-    ...dataRows.map((r) => `| ${r.join(' | ')} |`),
-  ].join('\n');
-
-  return `${heading}\n\n${table}`;
+function renderList(ordered: boolean, items: ListItemBlock[]): string {
+  // レベルごとに連番を振り直す
+  const counters: number[] = [];
+  return items
+    .map((item) => {
+      const level = Math.max(0, item.level);
+      counters.length = level + 1;
+      counters[level] = (counters[level] ?? 0) + 1;
+      const marker = ordered ? `${counters[level]}. ` : '- ';
+      return '  '.repeat(level) + marker + renderRuns(item.runs);
+    })
+    .join('\n');
 }
 
+function renderTable(rows: Run[][][]): string {
+  if (rows.length === 0) return '';
+  const cols = Math.max(...rows.map((r) => r.length));
+  if (cols === 0) return '';
+
+  const line = (cells: Run[][]) => {
+    const out: string[] = [];
+    for (let i = 0; i < cols; i++) out.push(escapeCell(renderRuns(cells[i] ?? [])));
+    return `| ${out.join(' | ')} |`;
+  };
+
+  const header = line(rows[0] ?? []);
+  const sep = `| ${new Array(cols).fill('---').join(' | ')} |`;
+  const body = rows.slice(1).map(line);
+  return [header, sep, ...body].join('\n');
+}
+
+/** セル内で表を壊す文字を無害化する */
 function escapeCell(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+  return s
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, '<br>')
+    .trim();
+}
+
+export function renderRuns(runs: Run[]): string {
+  return runs.map(renderRun).join('');
+}
+
+/**
+ * 1つの Run を装飾付き Markdown に変換する。
+ *
+ * 記号は前後の空白の外側に置く（`** 太字 **` は描画されないため）。
+ */
+function renderRun(run: Run): string {
+  const text = run.text;
+  if (text.length === 0) return '';
+
+  const lead = text.match(/^\s*/)?.[0] ?? '';
+  const trail = text.length > lead.length ? (text.match(/\s*$/)?.[0] ?? '') : '';
+  let core = text.slice(lead.length, text.length - trail.length);
+  if (core.length === 0) return text;
+
+  if (run.code) {
+    core = '`' + core + '`';
+  } else {
+    if (run.bold && run.italic) core = '***' + core + '***';
+    else if (run.bold) core = '**' + core + '**';
+    else if (run.italic) core = '*' + core + '*';
+    if (run.strike) core = '~~' + core + '~~';
+    if (run.highlight) core = '==' + core + '==';
+  }
+
+  if (run.link) core = '[' + core + '](' + run.link + ')';
+
+  return lead + core + trail;
 }

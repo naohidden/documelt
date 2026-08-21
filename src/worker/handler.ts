@@ -1,6 +1,6 @@
 import initWasm, { extract as wasmExtract } from '../../pkg/documelt.js';
 import type { WorkerRequest, WorkerResponse, WasmExtractionResult, ExtractionResult } from '../types.js';
-import { toMarkdown } from '../core/markdown.js';
+import { renderMarkdown } from '../core/markdown.js';
 
 let initialized = false;
 
@@ -17,9 +17,13 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
     const wasm = wasmExtract(data, extension) as WasmExtractionResult;
     const time = Math.round(performance.now() - start) / 1000;
 
-    const joined = wasm.texts.join('\n');
+    const texts =
+      options?.format === 'markdown' && wasm.success
+        ? wasm.blocks.map(renderMarkdown)
+        : wasm.texts;
+
     const result: ExtractionResult = {
-      texts: wasm.texts,
+      texts,
       success: wasm.success,
       error: wasm.error,
       meta: {
@@ -27,13 +31,10 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
         extension,
         size: data.byteLength,
         pages: wasm.pages,
-        characters: joined.length,
+        characters: texts.join('\n').length,
         time,
       },
     };
-    if (options?.format === 'markdown' && wasm.success) {
-      result.markdown = toMarkdown(wasm.texts, extension, filename);
-    }
     const response: WorkerResponse = { id, result };
     self.postMessage(response);
   } catch (err) {

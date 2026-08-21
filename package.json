@@ -1,6 +1,6 @@
 {
   "name": "documelt",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "WASM-powered document text extraction for PDF, DOCX, XLSX, PPTX",
   "type": "module",
   "main": "dist/index.js",
@@ -20,16 +20,19 @@
     "pkg/documelt_bg.wasm",
     "pkg/documelt.js",
     "pkg/documelt.d.ts",
-    "pkg/documelt_bg.wasm.d.ts"
+    "pkg/documelt_bg.wasm.d.ts",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build:wasm": "wasm-pack build crates --target web --out-dir ../pkg && rm -f pkg/package.json pkg/.gitignore",
     "build:ts": "tsc",
-    "build": "npm run build:wasm && npm run build:ts",
+    "build:demo": "cp dist/core/markdown.js docs/markdown.js",
+    "build": "npm run build:wasm && npm run build:ts && npm run build:demo",
     "prepublishOnly": "npm run build",
     "test": "node tests/extract.mjs",
     "test:rust": "cd crates && cargo test",
-    "test:output": "node tests/extract_output.mjs"
+    "test:output": "node tests/extract_output.mjs",
+    "test:markdown": "node tests/markdown_output.mjs"
   },
   "keywords": [
     "wasm",

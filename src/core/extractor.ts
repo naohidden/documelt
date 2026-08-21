@@ -1,7 +1,7 @@
 import type { ExtractionResult, ExtractOptions, SupportedFormat } from '../types.js';
 import { SUPPORTED_FORMATS } from '../types.js';
 import { callExtract } from './wasm.js';
-import { toMarkdown } from './markdown.js';
+import { renderMarkdown } from './markdown.js';
 
 function getExtension(fileName: string): string {
   return fileName.split('.').pop()?.toLowerCase() ?? '';
@@ -28,9 +28,13 @@ export async function extract(
   const wasm = await callExtract(data, extension);
   const time = Math.round(performance.now() - start) / 1000;
 
-  const joined = wasm.texts.join('\n');
-  const result: ExtractionResult = {
-    texts: wasm.texts,
+  const texts =
+    options.format === 'markdown' && wasm.success
+      ? wasm.blocks.map(renderMarkdown)
+      : wasm.texts;
+
+  return {
+    texts,
     success: wasm.success,
     error: wasm.error,
     meta: {
@@ -38,14 +42,10 @@ export async function extract(
       extension,
       size: data.byteLength,
       pages: wasm.pages,
-      characters: joined.length,
+      characters: texts.join('\n').length,
       time,
     },
   };
-  if (options.format === 'markdown' && wasm.success) {
-    result.markdown = toMarkdown(wasm.texts, extension, filename);
-  }
-  return result;
 }
 
 /**
