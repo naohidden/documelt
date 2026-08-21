@@ -2,13 +2,13 @@
 
 [![npm version](https://img.shields.io/npm/v/documelt.svg)](https://www.npmjs.com/package/documelt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/github/stars/NAOHIDEOTA/documelt?style=social)](https://github.com/NAOHIDEOTA/documelt)
+[![GitHub](https://img.shields.io/github/stars/naohidden/documelt?style=social)](https://github.com/naohidden/documelt)
 
 **Rust + WebAssembly** によるブラウザ向けドキュメントテキスト抽出ライブラリ。
 
 サーバーに依存せず、**ブラウザ上で** PDF・Word・Excel・PowerPoint からテキストを高速に抽出します。
 
-**[Live Demo](https://naohideota.github.io/documelt/docs)**
+**[Live Demo](https://naohidden.github.io/documelt/docs)**
 
 ![Demo](docs/assets/demo.gif)
 
@@ -195,8 +195,8 @@ WASM バイナリサイズ: **~1.2MB**
 
 ## Contributing
 
-[GitHub Issues](https://github.com/NAOHIDEOTA/documelt/issues) でバグ報告・機能リクエストを受け付けています。
+[GitHub Issues](https://github.com/naohidden/documelt/issues) でバグ報告・機能リクエストを受け付けています。
 
 ## License
 
-[MIT](LICENSE) - Copyright (c) 2026 NAOHIDEOTA
+[MIT](LICENSE) - Copyright (c) 2026 naohidden

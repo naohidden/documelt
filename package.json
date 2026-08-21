@@ -42,13 +42,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/NAOHIDEOTA/documelt.git"
+    "url": "git+https://github.com/naohidden/documelt.git"
   },
   "bugs": {
-    "url": "https://github.com/NAOHIDEOTA/documelt/issues"
+    "url": "https://github.com/naohidden/documelt/issues"
   },
-  "homepage": "https://github.com/NAOHIDEOTA/documelt#readme",
-  "author": "NAOHIDEOTA",
+  "homepage": "https://github.com/naohidden/documelt#readme",
+  "author": "naohidden",
   "devDependencies": {
     "typescript": "^6.0.2"
   }
