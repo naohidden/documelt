@@ -242,6 +242,96 @@
       color: #cbd5e1;
     }
 
+    /* Format toggle */
+    .format-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .format-bar.visible { display: flex; }
+
+    .format-label {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .format-switch {
+      display: inline-flex;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 3px;
+    }
+
+    .format-btn {
+      padding: 6px 16px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .format-btn:hover { color: #e2e8f0; }
+
+    .format-btn.active {
+      background: #60a5fa;
+      color: #0f172a;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Sample code */
+    .code-panel {
+      display: none;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .code-panel.visible { display: block; }
+
+    .code-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .code-title {
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    .code-body {
+      padding: 20px;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      color: #cbd5e1;
+    }
+
+    .code-body .c { color: #64748b; }
+    .code-body .k { color: #c084fc; }
+    .code-body .s { color: #86efac; }
+    .code-body .f { color: #60a5fa; }
+
     footer {
       text-align: center;
       margin-top: 48px;
@@ -303,12 +393,31 @@
       </div>
     </div>
 
+    <div class="format-bar" id="formatBar">
+      <span class="format-label">Output</span>
+      <div class="format-switch">
+        <button class="format-btn active" id="formatText" type="button">Text</button>
+        <button class="format-btn" id="formatMarkdown" type="button">Markdown</button>
+      </div>
+    </div>
+
+    <div class="code-panel" id="codePanel">
+      <div class="code-header">
+        <span class="code-title">この設定での呼び出し方</span>
+        <button class="copy-btn" id="copyCodeBtn">Copy</button>
+      </div>
+      <div class="code-body" id="codeBody"></div>
+    </div>
+
     <div class="tabs" id="tabs"></div>
 
     <div class="result" id="result">
       <div class="result-header">
         <span class="result-title" id="resultTitle">Extracted Text</span>
-        <button class="copy-btn" id="copyBtn">Copy</button>
+        <span class="result-actions">
+          <button class="copy-btn" id="downloadBtn">Download</button>
+          <button class="copy-btn" id="copyBtn">Copy</button>
+        </span>
       </div>
       <div class="result-body" id="resultBody"></div>
     </div>
@@ -326,8 +435,19 @@
 
   <script type="module">
     import init, { extract } from '../pkg/documelt.js';
+    import { renderMarkdown } from './markdown.js';
 
     let wasmReady = false;
+
+    // 現在の抽出結果と表示状態
+    const state = {
+      texts: [],
+      blocks: [],
+      ext: '',
+      filename: '',
+      format: 'text',   // 'text' | 'markdown'
+      page: -1,         // -1 = All
+    };
 
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('fileInput');
@@ -339,6 +459,13 @@
     const resultBody = document.getElementById('resultBody');
     const resultTitle = document.getElementById('resultTitle');
     const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const formatBar = document.getElementById('formatBar');
+    const formatTextBtn = document.getElementById('formatText');
+    const formatMdBtn = document.getElementById('formatMarkdown');
+    const codePanel = document.getElementById('codePanel');
+    const codeBody = document.getElementById('codeBody');
+    const copyCodeBtn = document.getElementById('copyCodeBtn');
 
     // Init WASM
     async function ensureInit() {
@@ -374,11 +501,47 @@
       }
     });
 
-    // Copy
+    // Format toggle
+    formatTextBtn.addEventListener('click', () => setFormat('text'));
+    formatMdBtn.addEventListener('click', () => setFormat('markdown'));
+
+    function setFormat(format) {
+      state.format = format;
+      formatTextBtn.classList.toggle('active', format === 'text');
+      formatMdBtn.classList.toggle('active', format === 'markdown');
+      render();
+    }
+
+    // Copy / Download
+    function flash(btn, label) {
+      const original = btn.textContent;
+      btn.textContent = label;
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    }
+
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(resultBody.textContent);
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1500);
+      flash(copyBtn, 'Copied!');
+    });
+
+    copyCodeBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(codeBody.textContent);
+      flash(copyCodeBtn, 'Copied!');
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const isMd = state.format === 'markdown';
+      const base = state.filename.replace(/\.[^.]+$/, '');
+      const suffix = state.page >= 0 ? '_' + (state.page + 1) : '';
+      const blob = new Blob([resultBody.textContent], {
+        type: (isMd ? 'text/markdown' : 'text/plain') + ';charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = base + suffix + (isMd ? '.md' : '.txt');
+      a.click();
+      URL.revokeObjectURL(url);
     });
 
     function formatSize(bytes) {
@@ -394,6 +557,91 @@
 
     function hideStatus() {
       status.className = 'status';
+    }
+
+    const unitOf = (ext) => (ext === 'xlsx' ? 'Sheet' : ext === 'pptx' ? 'Slide' : 'Page');
+
+    /**
+     * 現在の state から表示中の本文を組み立てる。
+     * Text     : WASM が返した生テキスト
+     * Markdown : 構造化ブロックを renderMarkdown で整形したもの
+     */
+    function pagesFor(format) {
+      return format === 'markdown' ? state.blocks.map(renderMarkdown) : state.texts;
+    }
+
+    function currentBody() {
+      const pages = pagesFor(state.format);
+      if (state.page < 0) return pages.join('\n\n');
+      return pages[state.page] ?? '';
+    }
+
+    /** 現在の呼び出しオプションに対応するサンプルコードを生成 */
+    function sampleCode() {
+      const n = state.texts.length;
+      const unit = unitOf(state.ext);
+
+      if (state.format === 'text') {
+        return [
+          "import { extractFromFile } from 'documelt';",
+          '',
+          'const result = await extractFromFile(file);',
+          '',
+          'console.log(result.texts);            // ' + unit + '単位のテキスト配列 (' + n + '件)',
+          "console.log(result.texts.join('\\n')); // 全文を1つの文字列で",
+          'console.log(result.meta);             // { filename, extension, pages, characters, time }',
+        ].join('\n');
+      }
+
+      return [
+        "import { extractFromFile } from 'documelt';",
+        '',
+        "// format: 'markdown' を渡すと texts の中身が Markdown になる",
+        "const result = await extractFromFile(file, { format: 'markdown' });",
+        '',
+        'console.log(result.texts);            // ' + unit + '単位の Markdown 配列 (' + n + '件)',
+        "console.log(result.texts.join('\\n')); // 全文を1つの Markdown 文字列で",
+        '',
+        '// ' + unit + ' 1件目の冒頭:',
+        '// ' + firstPagePreview(),
+      ].join('\n');
+    }
+
+    function firstPagePreview() {
+      const first = pagesFor('markdown')[0] ?? '';
+      const head = first.slice(0, 48).replace(/\n/g, '\\n');
+      return head + (first.length > 48 ? '...' : '');
+    }
+
+    /** コメント・文字列・キーワードだけ最小限に色付けする */
+    function highlight(code) {
+      const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return code.split('\n').map((line) => {
+        const idx = line.indexOf('//');
+        const codePart = idx >= 0 ? line.slice(0, idx) : line;
+        const comment = idx >= 0 ? line.slice(idx) : '';
+        let out = esc(codePart);
+        out = out.replace(/'[^'\n]*'/g, (m) => '<span class="s">' + m + '</span>');
+        out = out.replace(/\b(import|from|const|await)\b/g, '<span class="k">$1</span>');
+        out = out.replace(/\b(extractFromFile|console)\b/g, '<span class="f">$1</span>');
+        return out + (comment ? '<span class="c">' + esc(comment) + '</span>' : '');
+      }).join('\n');
+    }
+
+    function render() {
+      if (state.texts.length === 0) return;
+
+      resultBody.textContent = currentBody();
+
+      const label = state.page < 0
+        ? (state.texts.length > 1 ? 'All ' + unitOf(state.ext) + 's' : '')
+        : unitOf(state.ext) + ' ' + (state.page + 1);
+      const fmt = state.format === 'markdown' ? 'Markdown' : 'Text';
+      resultTitle.textContent = state.filename + (label ? ' - ' + label : '') + ' (' + fmt + ')';
+
+      downloadBtn.textContent = state.format === 'markdown' ? 'Download .md' : 'Download .txt';
+
+      codeBody.innerHTML = highlight(sampleCode());
     }
 
     async function handleFile(file) {
@@ -414,6 +662,8 @@
       meta.classList.remove('visible');
       tabs.classList.remove('visible');
       result.classList.remove('visible');
+      formatBar.classList.remove('visible');
+      codePanel.classList.remove('visible');
 
       try {
         await ensureInit();
@@ -432,6 +682,12 @@
           return;
         }
 
+        state.texts = res.texts;
+        state.blocks = res.blocks ?? [];
+        state.ext = ext;
+        state.filename = file.name;
+        state.page = -1;
+
         const joined = res.texts.join('\n');
 
         // Meta
@@ -449,29 +705,29 @@
           allTab.textContent = 'All';
           allTab.addEventListener('click', () => {
             setActiveTab(allTab);
-            resultBody.textContent = joined;
-            resultTitle.textContent = file.name + ' - All Pages';
+            state.page = -1;
+            render();
           });
           tabs.appendChild(allTab);
 
-          res.texts.forEach((text, i) => {
+          res.texts.forEach((_, i) => {
             const tab = document.createElement('div');
             tab.className = 'tab';
-            tab.textContent = (ext === 'xlsx' ? 'Sheet ' : 'Page ') + (i + 1);
+            tab.textContent = unitOf(ext) + ' ' + (i + 1);
             tab.addEventListener('click', () => {
               setActiveTab(tab);
-              resultBody.textContent = text;
-              resultTitle.textContent = file.name + ' - ' + tab.textContent;
+              state.page = i;
+              render();
             });
             tabs.appendChild(tab);
           });
           tabs.classList.add('visible');
         }
 
-        // Result
-        resultBody.textContent = joined;
-        resultTitle.textContent = file.name;
+        formatBar.classList.add('visible');
+        codePanel.classList.add('visible');
         result.classList.add('visible');
+        render();
 
       } catch (err) {
         showStatus('エラー: ' + err.message, 'error');

@@ -1,6 +1,7 @@
-import type { ExtractionResult, SupportedFormat } from '../types.js';
+import type { ExtractionResult, ExtractOptions, SupportedFormat } from '../types.js';
 import { SUPPORTED_FORMATS } from '../types.js';
 import { callExtract } from './wasm.js';
+import { renderMarkdown } from './markdown.js';
 
 function getExtension(fileName: string): string {
   return fileName.split('.').pop()?.toLowerCase() ?? '';
@@ -17,14 +18,23 @@ export function isSupported(fileName: string): boolean {
 /**
  * バイナリデータからテキストを抽出
  */
-export async function extract(data: Uint8Array, extension: SupportedFormat, filename: string = ''): Promise<ExtractionResult> {
+export async function extract(
+  data: Uint8Array,
+  extension: SupportedFormat,
+  filename: string = '',
+  options: ExtractOptions = {},
+): Promise<ExtractionResult> {
   const start = performance.now();
   const wasm = await callExtract(data, extension);
   const time = Math.round(performance.now() - start) / 1000;
 
-  const joined = wasm.texts.join('\n');
+  const texts =
+    options.format === 'markdown' && wasm.success
+      ? wasm.blocks.map(renderMarkdown)
+      : wasm.texts;
+
   return {
-    texts: wasm.texts,
+    texts,
     success: wasm.success,
     error: wasm.error,
     meta: {
@@ -32,7 +42,7 @@ export async function extract(data: Uint8Array, extension: SupportedFormat, file
       extension,
       size: data.byteLength,
       pages: wasm.pages,
-      characters: joined.length,
+      characters: texts.join('\n').length,
       time,
     },
   };
@@ -41,7 +51,7 @@ export async function extract(data: Uint8Array, extension: SupportedFormat, file
 /**
  * Fileオブジェクトからテキストを抽出（ブラウザ用）
  */
-export async function extractFromFile(file: File): Promise<ExtractionResult> {
+export async function extractFromFile(file: File, options: ExtractOptions = {}): Promise<ExtractionResult> {
   const extension = getExtension(file.name) as SupportedFormat;
   if (!isSupported(file.name)) {
     return {
@@ -59,5 +69,5 @@ export async function extractFromFile(file: File): Promise<ExtractionResult> {
     };
   }
   const buffer = await file.arrayBuffer();
-  return extract(new Uint8Array(buffer), extension, file.name);
+  return extract(new Uint8Array(buffer), extension, file.name, options);
 }
